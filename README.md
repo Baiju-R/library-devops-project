@@ -1,7 +1,17 @@
-# Library Management System
-A simple flask app to manage users along with mysql service
+# Library Management System 📚
+
+A production-ready Flask application with complete CI/CD pipeline for managing users and books, backed by MySQL and served through Nginx.
 
 ![Libray Management App - Flask](https://github.com/hamzaavvan/library-management-system/blob/master/ss/ss2.JPG?raw=true)
+
+## 🔧 Technology Stack
+
+- **Backend**: Python 3.10 + Flask 2.3.2
+- **Database**: MySQL 5.7
+- **Web Server**: Nginx (Reverse Proxy)
+- **App Server**: Gunicorn (4 workers)
+- **Container**: Docker + Docker Compose
+- **CI/CD**: Jenkins Pipeline (13 stages)
 
 
 ## Installation
@@ -82,5 +92,28 @@ Events: Push events
 - **Application Port**: 8090
 - **MySQL Port**: 3307
 - **Access**: http://localhost:8090
+
+### Recent Improvements ✨
+
+- ✅ Fixed 502 Bad Gateway with enhanced Nginx configuration
+- ✅ Added health check endpoints
+- ✅ Implemented comprehensive error handling
+- ✅ Pinned Werkzeug 2.3.7 for compatibility with Flask 2.3.2
+- ✅ Complete Jenkins CI/CD pipeline with 13 automated stages
+- ✅ Docker container conflict resolution in pipeline
+
+**Last Updated**: 2026-03-25
+
+---
+
+## 📝 License
+
+This project is open source and available for educational purposes.
+
+---
+
+## 🤝 Contributing
+
+Feel free to submit issues and pull requests for improvements!
 
 ---
