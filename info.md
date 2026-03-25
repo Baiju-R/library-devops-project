@@ -1,5 +1,231 @@
 # Library Management System - Change Log
 
+## Monitoring Stack Integration: Prometheus & Grafana (2026-03-25) - ADDED
+
+### Overview
+Integrated complete monitoring and observability stack using Prometheus and Grafana for real-time application metrics, performance tracking, and visualization.
+
+### Components Added
+
+#### 1. Prometheus (Port 9090)
+**Purpose**: Time-series metrics collection and storage
+
+**Configuration File**: `monitoring/prometheus/prometheus.yml`
+- Scrape interval: 15 seconds
+- Evaluation interval: 15 seconds
+- External labels: monitor='library-management-monitor', environment='production'
+
+**Scrape Targets**:
+- **prometheus** (localhost:9090): Self-monitoring
+- **flask-app** (flask:5000): Flask application metrics at `/metrics` endpoint
+- **nginx** (nginx:80): Nginx status metrics at `/nginx_status` (optional)
+- **mysql-exporter** (mysql-exporter:9104): MySQL database metrics (commented, optional)
+
+#### 2. Grafana (Port 3000)
+**Purpose**: Metrics visualization and dashboards
+
+**Default Credentials**:
+- Username: `admin`
+- Password: `admin`
+
+**Provisioning Files**:
+- `monitoring/grafana/provisioning/datasources/prometheus.yml`: Auto-configures Prometheus datasource
+- `monitoring/grafana/provisioning/dashboards/dashboard.yml`: Dashboard provider configuration
+- `monitoring/grafana/provisioning/dashboards/flask-dashboard.json`: Pre-built Flask metrics dashboard
+
+**Pre-built Dashboard Panels**:
+1. **Flask HTTP Request Rate**: Real-time request rate by endpoint and method
+2. **Average Response Time**: Gauge showing current average response time (threshold: 500ms)
+3. **HTTP Status Codes**: Timeline of status code distribution
+4. **Flask App Status**: Simple up/down health indicator
+
+#### 3. Flask Metrics Exporter
+**Library Added**: `prometheus-flask-exporter==0.23.0`
+
+**Changes to `app.py`**:
+```python
+from prometheus_flask_exporter import PrometheusMetrics
+
+# Initialize Prometheus metrics
+metrics = PrometheusMetrics(app)
+
+# Add info metric
+metrics.info('flask_app_info', 'Application info', 
+             version='1.0.0', app_name='library-management-system')
+```
+
+**Metrics Exposed at `/metrics` endpoint**:
+- `flask_http_request_total`: Total HTTP requests (by method, endpoint, status)
+- `flask_http_request_duration_seconds`: HTTP request latency histogram
+- `flask_http_request_exceptions_total`: Total exceptions in HTTP requests
+- `flask_app_info`: Application information (version, name)
+
+#### 4. Docker Compose Updates
+**File**: `docker-compose.yml`
+
+**Added Services**:
+```yaml
+prometheus:
+  image: prom/prometheus:latest
+  container_name: library_prometheus
+  ports: 9090:9090
+  volumes:
+    - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    - prometheus_data:/prometheus
+
+grafana:
+  image: grafana/grafana:latest
+  container_name: library_grafana
+  ports: 3000:3000
+  environment:
+    - GF_SECURITY_ADMIN_USER=admin
+    - GF_SECURITY_ADMIN_PASSWORD=admin
+  volumes:
+    - grafana_data:/var/lib/grafana
+    - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+```
+
+**Added Network**:
+- `library-network`: Bridge network for all services to communicate
+
+**Added Volumes**:
+- `prometheus_data`: Persistent storage for Prometheus time-series data
+- `grafana_data`: Persistent storage for Grafana dashboards and settings
+
+**Network Configuration**:
+All services (mysql, flask, nginx, prometheus, grafana) now connected via `library-network`
+
+#### 5. Documentation & Scripts
+
+**Created Files**:
+1. **`monitoring/README.md`** (9.5 KB):
+   - Complete monitoring stack documentation
+   - Architecture diagrams
+   - Configuration guide
+   - PromQL query examples
+   - Troubleshooting guide
+   - Best practices for production deployment
+
+2. **`monitoring/test-monitoring.sh`** (4.7 KB):
+   - Automated test script for monitoring stack
+   - Checks container status
+   - Verifies service availability
+   - Tests metrics collection
+   - Validates Grafana datasource configuration
+
+### Features & Benefits
+
+#### Real-time Observability
+- ✅ Track HTTP request rates per endpoint
+- ✅ Monitor average response times and percentiles
+- ✅ Identify slow endpoints and bottlenecks
+- ✅ Track error rates by status code
+- ✅ Monitor application health and uptime
+
+#### Pre-configured Dashboards
+- ✅ No manual setup required - auto-provisioned on startup
+- ✅ Pre-built Flask application dashboard
+- ✅ Customizable panels and queries
+- ✅ 5-second refresh rate for near real-time updates
+
+#### Metrics Collection
+- ✅ Automatic instrumentation of all Flask routes
+- ✅ No code changes needed for basic metrics
+- ✅ Custom metrics support for business logic
+- ✅ 15-second scrape interval (configurable)
+
+#### Data Persistence
+- ✅ Prometheus: 15-day retention (configurable)
+- ✅ Grafana: All dashboards and settings persist
+- ✅ Docker volumes for data persistence across restarts
+
+### Usage
+
+#### Starting the Monitoring Stack
+```bash
+# Start all services including monitoring
+docker-compose up -d
+
+# Check monitoring containers
+docker ps | grep -E "prometheus|grafana"
+
+# Test monitoring setup
+bash monitoring/test-monitoring.sh
+```
+
+#### Accessing Dashboards
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: http://localhost:9090
+- **Flask Metrics**: http://localhost:5000/metrics
+
+#### Generating Test Traffic
+```bash
+# Generate traffic to see metrics
+for i in {1..100}; do 
+    curl -s http://localhost:8090/books/ > /dev/null
+done
+
+# Watch metrics in real-time in Grafana
+```
+
+#### Example PromQL Queries
+```promql
+# Request rate per second
+rate(flask_http_request_total[5m])
+
+# Average response time
+flask_http_request_duration_seconds_sum / flask_http_request_duration_seconds_count
+
+# Error rate (5xx responses)
+rate(flask_http_request_total{status=~"5.."}[5m])
+
+# 95th percentile response time
+histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m]))
+```
+
+### Impact
+- ✅ **Visibility**: Complete visibility into application performance
+- ✅ **Debugging**: Quickly identify performance issues and errors
+- ✅ **Capacity Planning**: Track trends for resource planning
+- ✅ **SLA Monitoring**: Measure and track service level objectives
+- ✅ **Production Ready**: Industry-standard monitoring stack
+
+### Files Modified
+1. **requirements.txt**: Added `prometheus-flask-exporter==0.23.0`
+2. **app.py**: Added Prometheus metrics initialization (3 lines)
+3. **docker-compose.yml**: Added prometheus, grafana services, network, volumes
+4. **README.md**: Added monitoring section with quick start guide
+
+### Files Created
+1. `monitoring/prometheus/prometheus.yml` - Prometheus configuration
+2. `monitoring/grafana/provisioning/datasources/prometheus.yml` - Datasource config
+3. `monitoring/grafana/provisioning/dashboards/dashboard.yml` - Dashboard provider
+4. `monitoring/grafana/provisioning/dashboards/flask-dashboard.json` - Pre-built dashboard
+5. `monitoring/README.md` - Comprehensive monitoring documentation
+6. `monitoring/test-monitoring.sh` - Monitoring test script
+
+### Next Steps for Users
+1. Start the stack: `docker-compose up -d`
+2. Open Grafana: http://localhost:3000
+3. Login with admin/admin
+4. View pre-configured dashboard
+5. Generate traffic to see live metrics
+6. Customize dashboards as needed
+7. Set up alerts (optional, see monitoring/README.md)
+
+### Production Recommendations
+1. Change default Grafana password
+2. Configure alert rules in Prometheus
+3. Set up Alertmanager for notifications
+4. Adjust retention policy based on storage
+5. Add MySQL exporter for database metrics
+6. Configure TLS/HTTPS for Grafana
+7. Set up authentication for Prometheus
+
+---
+
+---
+
 ## Issue Fix: 502 Bad Gateway on Books Tab (2026-03-25) - RESOLVED
 
 ### Problem Identified

@@ -86,11 +86,63 @@ Events: Push events
 
 ---
 
+## 📊 Monitoring with Prometheus & Grafana
+
+Real-time application monitoring and visualization is now integrated!
+
+### Quick Start
+
+```bash
+# Start all services including monitoring
+docker-compose up -d
+
+# Or start only monitoring stack
+docker-compose up -d prometheus grafana
+```
+
+### Access Monitoring Dashboards
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **Grafana** | http://localhost:3000 | admin / admin |
+| **Prometheus** | http://localhost:9090 | None |
+| **Flask Metrics** | http://localhost:5000/metrics | None |
+
+### Features
+
+- 📈 **Real-time Metrics**: HTTP request rates, response times, status codes
+- 🎯 **Pre-built Dashboards**: Ready-to-use Flask application dashboard
+- ⚠️ **Alerting**: Set up custom alerts (optional)
+- 📊 **Time-series Data**: Track performance trends over time
+- 🔍 **PromQL Queries**: Powerful metric querying language
+
+### Test Monitoring Setup
+
+```bash
+# Run monitoring test script
+bash monitoring/test-monitoring.sh
+
+# Generate some traffic to see metrics
+for i in {1..100}; do curl http://localhost:8090/books/; done
+```
+
+### Documentation
+
+See **[monitoring/README.md](monitoring/README.md)** for:
+- Detailed configuration guide
+- Custom metrics creation
+- Troubleshooting tips
+- PromQL query examples
+
+---
+
 ## 📊 Application Status
 
-- **Docker Containers**: 3 (MySQL, Flask, Nginx)
+- **Docker Containers**: 5 (MySQL, Flask, Nginx, Prometheus, Grafana)
 - **Application Port**: 8090
 - **MySQL Port**: 3307
+- **Prometheus Port**: 9090
+- **Grafana Port**: 3000
 - **Access**: http://localhost:8090
 
 ### Recent Improvements ✨
@@ -101,6 +153,8 @@ Events: Push events
 - ✅ Pinned Werkzeug 2.3.7 for compatibility with Flask 2.3.2
 - ✅ Complete Jenkins CI/CD pipeline with 13 automated stages
 - ✅ Docker container conflict resolution in pipeline
+- ✅ **NEW**: Prometheus & Grafana monitoring stack
+- ✅ **NEW**: Flask metrics exporter with pre-built dashboards
 
 **Last Updated**: 2026-03-25
 

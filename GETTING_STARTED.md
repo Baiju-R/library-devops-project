@@ -155,7 +155,7 @@ sudo -u jenkins docker ps
 3. **Save**
    - Click "Save"
 
-### Step 8: Run First Build (10 minutes)
+### Step 8: Run First Build (10 minutes..)
 
 1. **Start Build**
    - Click "Build Now"

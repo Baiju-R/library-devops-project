@@ -4,3 +4,4 @@ flask-mysql==1.5.2
 timeago==1.0.15
 gunicorn
 pymysql
+prometheus-flask-exporter==0.23.0

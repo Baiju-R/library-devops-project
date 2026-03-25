@@ -4,12 +4,19 @@ import logging
 from flask import Flask, g, session, redirect, render_template, request, jsonify, Response
 from markupsafe import escape
 from Misc.functions import *
+from prometheus_flask_exporter import PrometheusMetrics
 
 # Enable detailed logging
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
 app = Flask(__name__)
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Initialize Prometheus metrics
+metrics = PrometheusMetrics(app)
+
+# Add info metric
+metrics.info('flask_app_info', 'Application info', version='1.0.0', app_name='library-management-system')
 
 # app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.secret_key = os.getenv("SECRET_KEY","devkey")
