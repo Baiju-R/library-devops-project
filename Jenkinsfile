@@ -74,13 +74,22 @@ pipeline {
                 script {
                     echo "Cleaning up previous deployment..."
                     sh '''
-                        # Stop and remove existing containers
+                        # Stop and remove existing containers (including ones not managed by compose)
                         docker-compose down -v || true
+                        
+                        # Force remove specific containers if they still exist
+                        docker rm -f library_mysql library_flask library_nginx 2>/dev/null || true
+                        
+                        # Remove any stopped containers
+                        docker container prune -f || true
                         
                         # Clean up dangling images
                         docker image prune -f || true
                         
-                        echo "Cleanup completed"
+                        # Remove orphan networks
+                        docker network prune -f || true
+                        
+                        echo "Cleanup completed - all containers and networks removed"
                     '''
                 }
             }
@@ -109,14 +118,24 @@ pipeline {
                     // Start MySQL for testing
                     sh '''
                         echo "Starting MySQL container for tests..."
+                        
+                        # Remove any existing MySQL container first
+                        docker rm -f library_mysql 2>/dev/null || true
+                        
+                        # Start MySQL
                         docker-compose up -d mysql
                         
                         # Wait for MySQL to be ready
                         echo "Waiting for MySQL to be ready..."
                         sleep 20
                         
-                        # Check MySQL is running
-                        docker-compose ps mysql
+                        # Verify MySQL is running
+                        if docker ps | grep library_mysql; then
+                            echo "MySQL container is running"
+                        else
+                            echo "WARNING: MySQL container may not be running"
+                            docker-compose ps mysql
+                        fi
                     '''
                     
                     // Run tests inside container
