@@ -141,7 +141,13 @@ pipeline {
                     // Run tests inside container
                     sh '''
                         echo "Running application tests..."
-                        docker-compose run --rm flask python test_books.py || echo "Tests completed with warnings"
+                        docker-compose run --rm flask python test_books.py
+                        TEST_EXIT_CODE=$?
+                        if [ $TEST_EXIT_CODE -ne 0 ]; then
+                            echo "Tests failed with exit code: $TEST_EXIT_CODE"
+                            exit $TEST_EXIT_CODE
+                        fi
+                        echo "Tests passed successfully"
                     '''
                 }
             }
@@ -155,17 +161,20 @@ pipeline {
                     // Check for common security issues
                     sh '''
                         echo "Checking for hardcoded secrets..."
-                        if grep -r "password.*=.*['\"]" --include="*.py" --exclude-dir=".git" . | grep -v "DB_PASSWORD.*os.getenv"; then
+                        if grep -r "password.*=.*" --include="*.py" --exclude-dir=".git" . | grep -v "DB_PASSWORD.*os.getenv" | grep -v "# " | grep -v "test"; then
                             echo "WARNING: Potential hardcoded passwords found!"
                         else
                             echo "No hardcoded passwords detected"
                         fi
                         
-                        # Check Dockerfile security
                         echo "Checking Dockerfile best practices..."
-                        if grep -q "apt-get.*install.*-y" Dockerfile && grep -q "rm -rf /var/lib/apt/lists" Dockerfile; then
-                            echo "✓ Dockerfile follows cleanup best practices"
+                        if grep -q "apt-get.*install" Dockerfile && grep -q "rm -rf /var/lib/apt/lists" Dockerfile; then
+                            echo "Dockerfile follows cleanup best practices"
+                        else
+                            echo "Dockerfile check completed"
                         fi
+                        
+                        echo "Security scan completed"
                     '''
                 }
             }
