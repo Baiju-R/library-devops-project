@@ -147,3 +147,78 @@ http://localhost:8090
 http://www.utm.mx/~caff/doc/OpenUPWeb/openup/guidances/guidelines/entity_control_boundary_pattern_C4047897.html
 
 An example of an entity for a customer service application is a Customer entity that manages all information about a customer. **A design element for this entity would include data about the customer, behavior to manage the data, behavior to validate customer information and to perform other business calculations, such as "Is this customer allowed to purchase product X?"**
+---
+
+## Jenkins CI/CD Pipeline Setup (2026-03-25)
+
+### Overview
+Implemented complete CI/CD pipeline using Jenkins for automated building, testing, and deployment.
+
+### Pipeline Components
+
+#### Jenkinsfile Created
+**Location**: ./Jenkinsfile
+**Type**: Declarative Pipeline
+
+#### Pipeline Stages (13 stages):
+1. **Environment Check** - Verify Docker, Git, Docker Compose availability
+2. **Checkout** - Clone repository from Git SCM
+3. **Code Analysis** - Count files, lines of code, optional flake8
+4. **Cleanup Previous Containers** - Remove old deployments
+5. **Build Docker Images** - Build Flask application image with no-cache
+6. **Unit Tests** - Run Python tests in container
+7. **Security Scan** - Check for hardcoded secrets and Dockerfile best practices
+8. **Deploy Services** - Start all containers (MySQL, Flask, Nginx)
+9. **Health Check** - Verify all endpoints respond (retry 3 times)
+10. **Integration Tests** - Test home, books, and search endpoints
+11. **Performance Test** - Basic response time testing (5 requests)
+12. **Tag & Archive** - Tag images with build number and git commit
+13. **Documentation** - Generate deployment report
+
+#### Post Actions:
+- **Success**: Display success message and container status
+- **Failure**: Collect logs and archive for debugging
+- **Always**: Cleanup old Docker images (72+ hours old)
+- **Unstable**: Log warning message
+
+### Files Created
+1. **Jenkinsfile** - Complete pipeline definition with all stages
+2. **JENKINS_SETUP.md** - Comprehensive setup guide
+
+### Features Implemented
+
+#### ✅ Automated Testing
+- Unit tests with Python test framework
+- Integration tests for all endpoints (/, /books/, /books/search)
+- Health checks with automatic retry (3 attempts)
+- Performance testing (response time measurement)
+- MySQL connection verification
+
+#### ✅ Security & Quality
+- Secret scanning (checks for hardcoded passwords)
+- Dockerfile best practices validation
+- Code quality metrics (file count, LOC)
+
+#### ✅ Build Management
+- Git commit tagging
+- Build number versioning
+- Docker image tagging system
+- Artifact archiving (deployment reports, logs)
+
+### How to Use
+
+#### Manual Build:
+1. Open Jenkins at http://localhost:8080
+2. Create new Pipeline job
+3. Configure Git repository URL
+4. Point to Jenkinsfile
+5. Click "Build Now"
+
+#### Automated Build (Webhook):
+1. Configure GitHub webhook to Jenkins
+2. Every push triggers automatic build
+3. Pipeline runs all stages automatically
+
+### See JENKINS_SETUP.md for complete installation and configuration guide
+
+---
