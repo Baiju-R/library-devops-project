@@ -1,0 +1,83 @@
+services:
+
+  mysql:
+
+    image: mysql:5.7
+
+    container_name: library_mysql
+
+    restart: always
+
+    environment:
+
+      MYSQL_ROOT_PASSWORD: root
+
+      MYSQL_DATABASE: lms
+
+    ports:
+
+      - "3307:3306"
+
+    volumes:
+
+      - mysql_data:/var/lib/mysql
+
+      - ./db/lms.sql:/docker-entrypoint-initdb.d/lms.sql
+
+
+  flask:
+
+    build: .
+
+    container_name: library_flask
+
+    restart: always
+
+    depends_on:
+
+      - mysql
+
+    environment:
+
+      DB_HOST: mysql
+
+      DB_USER: root
+
+      DB_PASSWORD: root
+
+      DB_NAME: lms
+
+      SECRET_KEY: librarysecret
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+
+  nginx:
+
+    image: nginx:latest
+
+    container_name: library_nginx
+
+    restart: always
+
+    depends_on:
+
+      - flask
+
+    ports:
+
+      - "8090:80"
+
+    volumes:
+
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+
+
+volumes:
+
+  mysql_data:
