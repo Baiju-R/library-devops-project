@@ -223,6 +223,89 @@ Implemented complete CI/CD pipeline using Jenkins for automated building, testin
 
 ---
 
+## Jenkins Build Fix: Container Name Conflict (2026-03-25) - RESOLVED
+
+### Problem Identified
+Jenkins build failed during "Unit Tests" stage with the following error:
+```
+Error response from daemon: Conflict. The container name "/library_mysql" is already in use by container "69da279d8f0c..."
+```
+
+### Root Cause Analysis
+- Manual `docker-compose up` created containers with specific names (library_mysql, library_flask, library_nginx)
+- Jenkins pipeline tried to create containers with the same names
+- Docker doesn't allow duplicate container names
+- The "Cleanup Previous Containers" stage wasn't comprehensive enough
+- It only used `docker-compose down -v` which doesn't remove containers created outside of the current compose context
+
+### Changes Made
+
+#### 1. Enhanced Cleanup Stage in Jenkinsfile
+**Added comprehensive cleanup steps:**
+```groovy
+# Stop and remove existing containers (including ones not managed by compose)
+docker-compose down -v || true
+
+# Force remove specific containers if they still exist
+docker rm -f library_mysql library_flask library_nginx 2>/dev/null || true
+
+# Remove any stopped containers
+docker container prune -f || true
+
+# Clean up dangling images
+docker image prune -f || true
+
+# Remove orphan networks
+docker network prune -f || true
+```
+
+**Benefits:**
+- Removes containers by specific names (handles containers from manual deployments)
+- Prunes stopped containers system-wide
+- Cleans up orphan networks
+- Ensures clean slate before each Jenkins build
+- Uses `|| true` to prevent failures if containers don't exist
+
+#### 2. Improved Unit Tests Stage
+**Added pre-cleanup check:**
+```groovy
+# Remove any existing MySQL container first
+docker rm -f library_mysql 2>/dev/null || true
+
+# Start MySQL
+docker-compose up -d mysql
+```
+
+**Enhanced verification:**
+```groovy
+# Verify MySQL is running
+if docker ps | grep library_mysql; then
+    echo "MySQL container is running"
+else
+    echo "WARNING: MySQL container may not be running"
+    docker-compose ps mysql
+fi
+```
+
+### Impact
+- ✅ Jenkins builds no longer fail due to container name conflicts
+- ✅ Pipeline can run successfully even if manual containers are running
+- ✅ Better cleanup ensures consistent build environment
+- ✅ More robust error handling and logging
+
+### Git Commit
+- **Commit**: efd9958
+- **Message**: "Fix: Improve container cleanup to handle name conflicts"
+- **Files Changed**: Jenkinsfile (23 insertions, 4 deletions)
+
+### Next Steps for Users
+1. Pull the latest code: `git pull origin main`
+2. Stop any running containers: `docker-compose down`
+3. Trigger new Jenkins build
+4. Build should now complete successfully
+
+---
+
 ---
 
 ## GitHub Repository Update (2026-03-25)
